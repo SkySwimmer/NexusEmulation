@@ -1,0 +1,9 @@
+rootProject.name = 'Nexus Emulation'
+include("projects:nexus-common")
+include("projects:nexus-webservices")
+include("projects:nexus-datatables")
+include("projects:nexus-accounts")
+include("projects:nexus-commondata")
+include("projects:nexus-networking")
+include("projects:nexus-io")
+include("deps:connective-http")

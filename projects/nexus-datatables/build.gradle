@@ -1,0 +1,56 @@
+plugins {
+	id 'java'
+	id 'maven-publish'
+}
+
+
+// Basic information
+version = "1.0.0.A1"
+group = "org.asf.nexus"
+
+// Internal
+apply plugin: 'eclipse'
+
+Calendar cal = new GregorianCalendar();
+cal.setTime(new Date());
+ext.buildyear = cal.get(Calendar.YEAR).toString();
+
+repositories {
+	mavenCentral()
+    flatDir {
+		dirs '../../deps'
+	}
+}
+
+compileJava {
+	options.compilerArgs << '-parameters'
+}
+
+eclipse {
+  jdt {
+	  file {
+		  withProperties { properties ->
+			  properties.setProperty("org.eclipse.jdt.core.compiler.codegen.methodParameters", "generate")
+		  }
+	  }
+  }
+}
+
+dependencies {
+	testImplementation group: 'junit', name: 'junit', version: '4.13.2'
+
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.0'
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.0'
+	implementation group: 'org.bouncycastle', name: 'bcpkix-jdk14', version: '1.73'
+
+	implementation project(":deps:connective-http")
+
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.0'
+	implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.15.2'
+
+	implementation group: 'javax.activation', name: 'activation', version: '1.1.1'
+
+	implementation group: 'com.mysql', name: 'mysql-connector-j', version: '8.0.33'
+	implementation group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '3.1.4'
+	implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.42.0.0'
+}
