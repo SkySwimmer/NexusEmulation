@@ -34,7 +34,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	private static ArrayList<IParameterAnnotationProcessor<Annotation>> parameterAnnotationProcessors = new ArrayList<IParameterAnnotationProcessor<Annotation>>();
 	private static ArrayList<IParameterProcessor> parameterProcessors = new ArrayList<IParameterProcessor>();
 
-	private WebServiceContext<T> context;
+	protected WebServiceContext<T> context;
 	private CookieContext cookies;
 
 	public AbstractWebService(WebServiceContext<T> context) {
@@ -149,7 +149,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	/**
 	 * Retrieves the server instance
 	 */
-	protected T getServerInstance() {
+	public T getServerInstance() {
 		return context.getServer();
 	}
 
@@ -168,7 +168,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * Creates a function result object with no response body (errors will use
 	 * default error page)
 	 */
-	public FunctionResult ok() {
+	protected FunctionResult ok() {
 		return new FunctionResult(200, "OK");
 	}
 
@@ -178,7 +178,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param mediaType    Response media type
 	 * @param responseBody Response body
 	 */
-	public FunctionResult ok(String mediaType, InputStream responseBody) {
+	protected FunctionResult ok(String mediaType, InputStream responseBody) {
 		return new FunctionResult(200, "OK", mediaType, responseBody);
 	}
 
@@ -187,7 +187,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * 
 	 * @param responseBody Response body
 	 */
-	public FunctionResult ok(InputStream responseBody) {
+	protected FunctionResult ok(InputStream responseBody) {
 		return new FunctionResult(200, "OK", responseBody);
 	}
 
@@ -198,7 +198,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param contentLength Response body length
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult ok(String mediaType, long contentLength, InputStream responseBody) {
+	protected FunctionResult ok(String mediaType, long contentLength, InputStream responseBody) {
 		return new FunctionResult(200, "OK", mediaType, contentLength, responseBody);
 	}
 
@@ -208,7 +208,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param contentLength Response body length
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult ok(long contentLength, InputStream responseBody) {
+	protected FunctionResult ok(long contentLength, InputStream responseBody) {
 		return new FunctionResult(200, "OK", contentLength, responseBody);
 	}
 
@@ -218,7 +218,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param mediaType    Response media type
 	 * @param responseBody Response body
 	 */
-	public FunctionResult ok(String mediaType, byte[] responseBody) {
+	protected FunctionResult ok(String mediaType, byte[] responseBody) {
 		return new FunctionResult(200, "OK", mediaType, responseBody);
 	}
 
@@ -227,7 +227,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * 
 	 * @param responseBody Response body
 	 */
-	public FunctionResult ok(byte[] responseBody) {
+	protected FunctionResult ok(byte[] responseBody) {
 		return new FunctionResult(200, "OK", responseBody);
 	}
 
@@ -237,7 +237,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param mediaType    Response media type
 	 * @param responseBody Response body
 	 */
-	public FunctionResult ok(String mediaType, String responseBody) {
+	protected FunctionResult ok(String mediaType, String responseBody) {
 		return new FunctionResult(200, "OK", mediaType, responseBody);
 
 	}
@@ -247,7 +247,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * 
 	 * @param responseBody Response body
 	 */
-	public FunctionResult ok(String responseBody) {
+	protected FunctionResult ok(String responseBody) {
 		return new FunctionResult(200, "OK", responseBody);
 	}
 
@@ -258,7 +258,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param statusCode    Result status code
 	 * @param statusMessage Result status message
 	 */
-	public FunctionResult response(int statusCode, String statusMessage) {
+	protected FunctionResult response(int statusCode, String statusMessage) {
 		return new FunctionResult(statusCode, statusMessage);
 	}
 
@@ -270,7 +270,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param mediaType     Response media type
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult response(int statusCode, String statusMessage, String mediaType, InputStream responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, String mediaType, InputStream responseBody) {
 		return new FunctionResult(statusCode, statusMessage, mediaType, responseBody);
 	}
 
@@ -281,7 +281,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param statusMessage Result status message
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult response(int statusCode, String statusMessage, InputStream responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, InputStream responseBody) {
 		return new FunctionResult(statusCode, statusMessage, responseBody);
 	}
 
@@ -294,7 +294,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param contentLength Response body length
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult response(int statusCode, String statusMessage, String mediaType, long contentLength,
+	protected FunctionResult response(int statusCode, String statusMessage, String mediaType, long contentLength,
 			InputStream responseBody) {
 		return new FunctionResult(statusCode, statusMessage, mediaType, contentLength, responseBody);
 	}
@@ -307,7 +307,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param contentLength Response body length
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult response(int statusCode, String statusMessage, long contentLength, InputStream responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, long contentLength, InputStream responseBody) {
 		return new FunctionResult(statusCode, statusMessage, contentLength, responseBody);
 	}
 
@@ -319,7 +319,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param mediaType     Response media type
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult response(int statusCode, String statusMessage, String mediaType, byte[] responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, String mediaType, byte[] responseBody) {
 		return new FunctionResult(statusCode, statusMessage, mediaType, responseBody);
 	}
 
@@ -330,7 +330,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param statusMessage Result status message
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult response(int statusCode, String statusMessage, byte[] responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, byte[] responseBody) {
 		return new FunctionResult(statusCode, statusMessage, responseBody);
 	}
 
@@ -342,7 +342,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param mediaType     Response media type
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult response(int statusCode, String statusMessage, String mediaType, String responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, String mediaType, String responseBody) {
 		return new FunctionResult(statusCode, statusMessage, mediaType, responseBody);
 
 	}
@@ -354,7 +354,7 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param statusMessage Result status message
 	 * @param responseBody  Response body
 	 */
-	public FunctionResult response(int statusCode, String statusMessage, String responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, String responseBody) {
 		return new FunctionResult(statusCode, statusMessage, responseBody);
 	}
 

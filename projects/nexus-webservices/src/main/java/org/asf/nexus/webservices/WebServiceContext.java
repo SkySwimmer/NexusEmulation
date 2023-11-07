@@ -369,6 +369,9 @@ public class WebServiceContext<T extends INexusBaseServer> {
 			if (param.getType().isAssignableFrom(FunctionInfo.class)) {
 				// Function information instance
 				args[i] = fI;
+			} else if (param.getType().isAssignableFrom(ApiRequestParams.class)) {
+				// API request params
+				args[i] = requestParams;
 			} else {
 				boolean processed = false;
 
