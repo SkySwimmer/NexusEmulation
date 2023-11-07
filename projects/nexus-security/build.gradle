@@ -3,6 +3,9 @@ plugins {
 	id 'maven-publish'
 }
 
+// Settings
+sourceCompatibility = '1.15'
+targetCompatibility = '1.15'
 
 // Basic information
 version = "1.0.0.A1"

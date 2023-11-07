@@ -3,6 +3,9 @@ plugins {
 	id 'maven-publish'
 }
 
+// Settings
+sourceCompatibility = '1.15'
+targetCompatibility = '1.15'
 
 // Basic information
 version = "1.0.0.A1"
@@ -37,6 +40,9 @@ eclipse {
 }
 
 dependencies {
+	implementation project.getParent().project("nexus-common")
+	implementation project.getParent().project("nexus-events")
+	
 	testImplementation group: 'junit', name: 'junit', version: '4.13.2'
 
 	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.0'
