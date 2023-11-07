@@ -184,9 +184,9 @@ public class WebServiceContext<T extends INexusBaseServer> {
 				for (Method mth : functions.get(func.toLowerCase())) {
 					// Check validity
 					boolean valid = true;
-					for (IMethodAnnotationProcessor<Annotation> proc : AbstractWebService
-							.getMethodAnnotationProcessors()) {
-						if (mth.isAnnotationPresent(proc.annotation())) {
+					for (Annotation anno : mth.getAnnotations()) {
+						for (IMethodAnnotationProcessor<Annotation> proc : AbstractWebService
+								.getMethodAnnotationProcessors(anno.getClass())) {
 							// Process
 							try {
 								if (proc.process(mth.getAnnotation(proc.annotation()), mth, function, req,
@@ -247,9 +247,9 @@ public class WebServiceContext<T extends INexusBaseServer> {
 				for (Method mth : functions.get(path.toLowerCase())) {
 					// Check validity
 					boolean valid = true;
-					for (IMethodAnnotationProcessor<Annotation> proc : AbstractWebService
-							.getMethodAnnotationProcessors()) {
-						if (mth.isAnnotationPresent(proc.annotation())) {
+					for (Annotation anno : mth.getAnnotations()) {
+						for (IMethodAnnotationProcessor<Annotation> proc : AbstractWebService
+								.getMethodAnnotationProcessors(anno.getClass())) {
 							// Process
 							try {
 								if (proc.process(mth.getAnnotation(proc.annotation()), mth, function, req,
@@ -343,8 +343,9 @@ public class WebServiceContext<T extends INexusBaseServer> {
 		HttpException pendingException = null;
 
 		// Go through annotation processors
-		for (IMethodAnnotationProcessor<Annotation> processor : AbstractWebService.getMethodAnnotationProcessors()) {
-			if (mth.isAnnotationPresent(processor.annotation())) {
+		for (Annotation anno : mth.getAnnotations()) {
+			for (IMethodAnnotationProcessor<Annotation> processor : AbstractWebService
+					.getMethodAnnotationProcessors(anno.getClass())) {
 				try {
 					// Process
 					if (processor.process(mth.getAnnotation(processor.annotation()), mth, fI, requestParams,
@@ -390,9 +391,9 @@ public class WebServiceContext<T extends INexusBaseServer> {
 				}
 
 				// Go through annotation processors
-				for (IParameterAnnotationProcessor<Annotation> processor : AbstractWebService
-						.getParameterAnnotationProcessors()) {
-					if (param.isAnnotationPresent(processor.annotation())) {
+				for (Annotation anno : param.getAnnotations()) {
+					for (IParameterAnnotationProcessor<Annotation> processor : AbstractWebService
+							.getParameterAnnotationProcessors(anno.getClass())) {
 						try {
 							// Process
 							if (processor.match(mth.getAnnotation(processor.annotation()), mth, param, fI,

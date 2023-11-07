@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.asf.connective.RemoteClient;
 import org.asf.connective.processors.HttpPushProcessor;
@@ -30,8 +31,8 @@ import org.asf.nexus.webservices.functions.processors.impl.ExperimentalFeatureAn
 public abstract class AbstractWebService<T extends INexusBaseServer> extends HttpPushProcessor {
 
 	private static ArrayList<IFunctionResultPostProcessor> functionResultPostProcessors = new ArrayList<IFunctionResultPostProcessor>();
-	private static ArrayList<IMethodAnnotationProcessor<Annotation>> methodAnnotationProcessors = new ArrayList<IMethodAnnotationProcessor<Annotation>>();
-	private static ArrayList<IParameterAnnotationProcessor<Annotation>> parameterAnnotationProcessors = new ArrayList<IParameterAnnotationProcessor<Annotation>>();
+	private static HashMap<String, ArrayList<IMethodAnnotationProcessor<Annotation>>> methodAnnotationProcessors = new HashMap<String, ArrayList<IMethodAnnotationProcessor<Annotation>>>();
+	private static HashMap<String, ArrayList<IParameterAnnotationProcessor<Annotation>>> parameterAnnotationProcessors = new HashMap<String, ArrayList<IParameterAnnotationProcessor<Annotation>>>();
 	private static ArrayList<IParameterProcessor> parameterProcessors = new ArrayList<IParameterProcessor>();
 
 	protected WebServiceContext<T> context;
@@ -270,7 +271,8 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param mediaType     Response media type
 	 * @param responseBody  Response body
 	 */
-	protected FunctionResult response(int statusCode, String statusMessage, String mediaType, InputStream responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, String mediaType,
+			InputStream responseBody) {
 		return new FunctionResult(statusCode, statusMessage, mediaType, responseBody);
 	}
 
@@ -307,7 +309,8 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 * @param contentLength Response body length
 	 * @param responseBody  Response body
 	 */
-	protected FunctionResult response(int statusCode, String statusMessage, long contentLength, InputStream responseBody) {
+	protected FunctionResult response(int statusCode, String statusMessage, long contentLength,
+			InputStream responseBody) {
 		return new FunctionResult(statusCode, statusMessage, contentLength, responseBody);
 	}
 
@@ -383,7 +386,13 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void registerAnnotationProcessor(IMethodAnnotationProcessor<?> processor) {
-		methodAnnotationProcessors.add((IMethodAnnotationProcessor) processor);
+		ArrayList<IMethodAnnotationProcessor<Annotation>> lst = methodAnnotationProcessors
+				.get(processor.annotation().getTypeName());
+		if (lst == null) {
+			lst = new ArrayList<IMethodAnnotationProcessor<Annotation>>();
+			methodAnnotationProcessors.put(processor.annotation().getTypeName(), lst);
+		}
+		lst.add((IMethodAnnotationProcessor) processor);
 	}
 
 	/**
@@ -393,7 +402,24 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 */
 	@SuppressWarnings("unchecked")
 	public static IMethodAnnotationProcessor<Annotation>[] getMethodAnnotationProcessors() {
-		return methodAnnotationProcessors.toArray(t -> new IMethodAnnotationProcessor[t]);
+		ArrayList<IMethodAnnotationProcessor<Annotation>> lst = new ArrayList<IMethodAnnotationProcessor<Annotation>>();
+		methodAnnotationProcessors.values().forEach(t -> lst.addAll(t));
+		return lst.toArray(t -> new IMethodAnnotationProcessor[t]);
+	}
+
+	/**
+	 * Retrieves method annotation processors
+	 * 
+	 * @param anno Annotation to retrieve the processors for
+	 * @return Array of IMethodAnnotationProcessor instances
+	 */
+	@SuppressWarnings("unchecked")
+	public static IMethodAnnotationProcessor<Annotation>[] getMethodAnnotationProcessors(
+			Class<? extends Annotation> anno) {
+		ArrayList<IMethodAnnotationProcessor<Annotation>> lst = new ArrayList<IMethodAnnotationProcessor<Annotation>>();
+		if (methodAnnotationProcessors.containsKey(anno.getTypeName()))
+			lst.addAll(methodAnnotationProcessors.get(anno.getTypeName()));
+		return lst.toArray(t -> new IMethodAnnotationProcessor[t]);
 	}
 
 	/**
@@ -403,7 +429,13 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void registerAnnotationProcessor(IParameterAnnotationProcessor<?> processor) {
-		parameterAnnotationProcessors.add((IParameterAnnotationProcessor) processor);
+		ArrayList<IParameterAnnotationProcessor<Annotation>> lst = parameterAnnotationProcessors
+				.get(processor.annotation().getTypeName());
+		if (lst == null) {
+			lst = new ArrayList<IParameterAnnotationProcessor<Annotation>>();
+			parameterAnnotationProcessors.put(processor.annotation().getTypeName(), lst);
+		}
+		lst.add((IParameterAnnotationProcessor) processor);
 	}
 
 	/**
@@ -413,7 +445,24 @@ public abstract class AbstractWebService<T extends INexusBaseServer> extends Htt
 	 */
 	@SuppressWarnings("unchecked")
 	public static IParameterAnnotationProcessor<Annotation>[] getParameterAnnotationProcessors() {
-		return parameterAnnotationProcessors.toArray(t -> new IParameterAnnotationProcessor[t]);
+		ArrayList<IParameterAnnotationProcessor<Annotation>> lst = new ArrayList<IParameterAnnotationProcessor<Annotation>>();
+		parameterAnnotationProcessors.values().forEach(t -> lst.addAll(t));
+		return lst.toArray(t -> new IParameterAnnotationProcessor[t]);
+	}
+
+	/**
+	 * Retrieves parameter annotation processors
+	 * 
+	 * @param anno Annotation to retrieve the processors for
+	 * @return Array of IParameterAnnotationProcessor instances
+	 */
+	@SuppressWarnings("unchecked")
+	public static IParameterAnnotationProcessor<Annotation>[] getParameterAnnotationProcessors(
+			Class<? extends Annotation> anno) {
+		ArrayList<IParameterAnnotationProcessor<Annotation>> lst = new ArrayList<IParameterAnnotationProcessor<Annotation>>();
+		if (parameterAnnotationProcessors.containsKey(anno.getTypeName()))
+			lst.addAll(parameterAnnotationProcessors.get(anno.getTypeName()));
+		return lst.toArray(t -> new IParameterAnnotationProcessor[t]);
 	}
 
 	/**
