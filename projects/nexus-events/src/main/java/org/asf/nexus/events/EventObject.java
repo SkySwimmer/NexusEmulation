@@ -2,8 +2,7 @@ package org.asf.nexus.events;
 
 /**
  * 
- * Abstract event object, needs to be annotated with EventPath for registration
- * to work
+ * Abstract event object
  * 
  * @author Sky Swimmer
  *
@@ -11,11 +10,6 @@ package org.asf.nexus.events;
 public abstract class EventObject {
 
 	private boolean handled = false;
-
-	/**
-	 * Defines the event path
-	 */
-	public abstract String eventPath();
 
 	/**
 	 * Checks if the event has been marked as handled

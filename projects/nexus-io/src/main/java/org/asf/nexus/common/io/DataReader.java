@@ -15,6 +15,7 @@ import java.util.Arrays;
 public class DataReader {
 
 	private InputStream input;
+	private int pendingByte = -1;
 
 	public DataReader(InputStream input) {
 		this.input = input;
@@ -25,13 +26,39 @@ public class DataReader {
 	}
 
 	/**
+	 * Checks if a binary entry is present for reading
+	 * 
+	 * @return True if a binary entry is ready to be read, false if there is no data
+	 * @throws IOException If the stream is closed
+	 */
+	public boolean hasNext() throws IOException {
+		if (pendingByte != -1)
+			return true;
+		try {
+			pendingByte = input.read();
+		} catch (IOException e) {
+			return false;
+		}
+		return pendingByte != -1;
+	}
+
+	/**
 	 * Reads all bytes
 	 * 
 	 * @return Array of bytes
 	 * @throws IOException If reading fails
 	 */
 	public byte[] readAllBytes() throws IOException {
-		return input.readAllBytes();
+		byte[] res = input.readAllBytes();
+		if (pendingByte != -1) {
+			byte[] nRes = new byte[res.length + 1];
+			for (int i = 0; i < res.length; i++)
+				nRes[i + 1] = res[i];
+			nRes[0] = (byte) pendingByte;
+			res = nRes;
+			pendingByte = -1;
+		}
+		return res;
 	}
 
 	/**
@@ -45,8 +72,13 @@ public class DataReader {
 		byte[] res = new byte[num];
 		int c = 0;
 		while (true) {
+			if (pendingByte != -1) {
+				int p = pendingByte;
+				pendingByte = -1;
+				res[c++] = (byte) p;
+			}
 			try {
-				int r = input.read(res, c, num);
+				int r = input.read(res, c, num - c);
 				if (r == -1)
 					break;
 				c += r;
@@ -69,6 +101,11 @@ public class DataReader {
 	 * @throws IOException If reading fails
 	 */
 	public byte readRawByte() throws IOException {
+		if (pendingByte != -1) {
+			int p = pendingByte;
+			pendingByte = -1;
+			return (byte) p;
+		}
 		int i = input.read();
 		if (i == -1)
 			throw new IOException("Stream closed");

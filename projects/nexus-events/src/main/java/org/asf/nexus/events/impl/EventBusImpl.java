@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 import org.asf.nexus.events.EventBus;
 import org.asf.nexus.events.EventListener;
 import org.asf.nexus.events.EventObject;
-import org.asf.nexus.events.EventPath;
 import org.asf.nexus.events.IEventReceiver;
 
 public class EventBusImpl extends EventBus {
@@ -54,12 +53,10 @@ public class EventBusImpl extends EventBus {
 				if (meth.getParameterCount() == 1 && EventObject.class.isAssignableFrom(meth.getParameterTypes()[0])) {
 					// Find event path
 					Class<?> eventType = meth.getParameterTypes()[0];
-					if (eventType.isAnnotationPresent(EventPath.class)) {
-						EventPath info = eventType.getAnnotation(EventPath.class);
-
+					if (EventObject.class.isAssignableFrom(eventType)) {
 						// Add listener
 						meth.setAccessible(true);
-						String path = info.value();
+						String path = eventType.getTypeName();
 						if (!listeners.containsKey(path)) {
 							synchronized (listeners) {
 								if (!listeners.containsKey(path))
@@ -79,7 +76,7 @@ public class EventBusImpl extends EventBus {
 								}
 							};
 							eventLog.debug("Attaching event handler " + receiver.getClass().getTypeName() + ":"
-									+ meth.getName() + " to event " + info.value());
+									+ meth.getName() + " to event " + eventType.getTypeName());
 							events.add(l);
 						}
 					}
@@ -107,12 +104,10 @@ public class EventBusImpl extends EventBus {
 				if (meth.getParameterCount() == 1 && EventObject.class.isAssignableFrom(meth.getParameterTypes()[0])) {
 					// Find event path
 					Class<?> eventType = meth.getParameterTypes()[0];
-					if (eventType.isAnnotationPresent(EventPath.class)) {
-						EventPath info = eventType.getAnnotation(EventPath.class);
-
+					if (EventObject.class.isAssignableFrom(eventType)) {
 						// Find listeners
 						meth.setAccessible(true);
-						String path = info.value();
+						String path = eventType.getTypeName();
 						if (listeners.containsKey(path)) {
 							ArrayList<Consumer<?>> events = listeners.get(path);
 							synchronized (events) {
@@ -122,9 +117,9 @@ public class EventBusImpl extends EventBus {
 									if (ev instanceof EventContainerListener) {
 										EventContainerListener l = (EventContainerListener) ev;
 										if (l.owner == receiver) {
-											eventLog.debug(
-													"Detaching event handler " + receiver.getClass().getTypeName() + ":"
-															+ meth.getName() + " from event " + info.value());
+											eventLog.debug("Detaching event handler "
+													+ receiver.getClass().getTypeName() + ":" + meth.getName()
+													+ " from event " + eventType.getTypeName());
 											events.remove(l);
 										}
 									}
@@ -140,10 +135,8 @@ public class EventBusImpl extends EventBus {
 
 	@Override
 	public <T extends EventObject> void addEventHandler(Class<T> eventClass, Consumer<T> eventHandler) {
-		EventPath info = eventClass.getAnnotation(EventPath.class);
-
 		// Add listener
-		String path = info.value();
+		String path = eventClass.getTypeName();
 		if (!listeners.containsKey(path)) {
 			synchronized (listeners) {
 				if (!listeners.containsKey(path))
@@ -153,22 +146,20 @@ public class EventBusImpl extends EventBus {
 		ArrayList<Consumer<?>> events = listeners.get(path);
 		synchronized (events) {
 			events.add(eventHandler);
-			eventLog.debug("Attaching event handler " + eventHandler + " to event " + info.value());
+			eventLog.debug("Attaching event handler " + eventHandler + " to event " + eventClass.getTypeName());
 		}
 	}
 
 	@Override
 	public <T extends EventObject> void removeEventHandler(Class<T> eventClass, Consumer<T> eventHandler) {
-		EventPath info = eventClass.getAnnotation(EventPath.class);
-
 		// Add listener
-		String path = info.value();
+		String path = eventClass.getTypeName();
 		if (!listeners.containsKey(path))
 			return;
 		ArrayList<Consumer<?>> events = listeners.get(path);
 		synchronized (events) {
 			events.remove(eventHandler);
-			eventLog.debug("Detaching event handler " + eventHandler + " from event " + info.value());
+			eventLog.debug("Detaching event handler " + eventHandler + " from event " + eventClass.getTypeName());
 		}
 	}
 
@@ -177,9 +168,9 @@ public class EventBusImpl extends EventBus {
 	public void dispatchEvent(EventObject event) {
 		if (parent != null)
 			parent.dispatchEvent(event);
-		if (listeners.containsKey(event.eventPath())) {
+		if (listeners.containsKey(event.getClass().getTypeName())) {
 			// Dispatch event
-			ArrayList<Consumer<?>> events = this.listeners.get(event.eventPath());
+			ArrayList<Consumer<?>> events = this.listeners.get(event.getClass().getTypeName());
 			Consumer<?>[] evs;
 			synchronized (events) {
 				evs = events.toArray(t -> new Consumer<?>[t]);

@@ -29,7 +29,7 @@ public abstract class EventBus {
 	 * 
 	 * @param <T>          Event type
 	 * @param eventClass   Event class
-	 * @param eventHandler Event handler to remove
+	 * @param eventHandler Event handler to add
 	 */
 	public abstract <T extends EventObject> void addEventHandler(Class<T> eventClass, Consumer<T> eventHandler);
 
