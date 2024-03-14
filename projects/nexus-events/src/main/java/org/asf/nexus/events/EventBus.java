@@ -2,6 +2,7 @@ package org.asf.nexus.events;
 
 import java.util.function.Consumer;
 
+import org.asf.nexus.common.ObjectStorageContainer;
 import org.asf.nexus.events.impl.EventBusImpl;
 
 /**
@@ -11,7 +12,7 @@ import org.asf.nexus.events.impl.EventBusImpl;
  * @author Sky Swimmer
  *
  */
-public abstract class EventBus {
+public abstract class EventBus extends ObjectStorageContainer {
 
 	protected static EventBus instance = new EventBusImpl();
 

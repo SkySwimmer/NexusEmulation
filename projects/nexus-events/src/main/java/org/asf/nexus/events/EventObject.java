@@ -27,4 +27,12 @@ public abstract class EventObject {
 		handled = true;
 	}
 
+	/**
+	 * Called when the event object has been registered
+	 * 
+	 * @param bus Event bus that the event was registered to
+	 */
+	public void onRegister(EventBus bus) {
+	}
+
 }

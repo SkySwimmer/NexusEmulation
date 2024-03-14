@@ -1,4 +1,5 @@
 rootProject.name = 'Nexus Emulation'
+include("projects:nexus-classscanning")
 include("projects:nexus-events")
 include("projects:nexus-common")
 include("projects:nexus-security")
