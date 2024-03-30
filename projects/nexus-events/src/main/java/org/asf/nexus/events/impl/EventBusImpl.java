@@ -17,6 +17,7 @@ import org.asf.nexus.events.EventBus;
 import org.asf.nexus.events.EventListener;
 import org.asf.nexus.events.EventObject;
 import org.asf.nexus.events.IEventReceiver;
+import org.asf.nexus.events.SupplierEventObject;
 import org.asf.nexus.events.conditions.EventConditionConstructor;
 import org.asf.nexus.events.conditions.RepeatableTarget;
 import org.asf.nexus.events.conditions.interfaces.IEventConditionConstructor;
@@ -24,6 +25,8 @@ import org.asf.nexus.events.conditions.interfaces.IGenericEventCondition;
 import org.asf.nexus.events.impl.asm.BinaryClassLoader;
 import org.asf.nexus.events.impl.asm.IEventDispatcher;
 import org.asf.nexus.events.impl.asm.IStaticEventDispatcher;
+import org.asf.nexus.events.impl.asm.IStaticSupplierEventDispatcher;
+import org.asf.nexus.events.impl.asm.ISupplierEventDispatcher;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnNode;
@@ -45,6 +48,8 @@ public class EventBusImpl extends EventBus {
 	private static BinaryClassLoader binLoader = new BinaryClassLoader(EventBusImpl.class.getClassLoader());
 	private static HashMap<String, IStaticEventDispatcher> staticDispatchers = new HashMap<String, IStaticEventDispatcher>();
 	private static HashMap<String, IEventDispatcher> objDispatchers = new HashMap<String, IEventDispatcher>();
+	private static HashMap<String, IStaticSupplierEventDispatcher> staticSupDispatchers = new HashMap<String, IStaticSupplierEventDispatcher>();
+	private static HashMap<String, ISupplierEventDispatcher> objSupDispatchers = new HashMap<String, ISupplierEventDispatcher>();
 
 	private static HashMap<String, IEventConditionConstructor> conditionCtors = new HashMap<String, IEventConditionConstructor>();
 
@@ -53,6 +58,7 @@ public class EventBusImpl extends EventBus {
 		public Annotation anno;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void addAllEventsFromReceiver(IEventReceiver receiver) {
 		// Check
@@ -107,6 +113,23 @@ public class EventBusImpl extends EventBus {
 
 						// Add listener
 						String path = eventType.getTypeName();
+						boolean toLoad = false;
+						synchronized (loadedEvents) {
+							if (!loadedEvents.contains(path)) {
+								loadedEvents.add(path);
+								toLoad = true;
+							}
+						}
+						if (toLoad) {
+							// Load event
+							EventObject ev = null;
+							try {
+								ev = (EventObject) eventType.getConstructor().newInstance();
+							} catch (Exception e) {
+							}
+							if (ev != null)
+								ev.onRegister(this);
+						}
 						synchronized (listeners) {
 							ArrayList<Consumer<?>> events = new ArrayList<Consumer<?>>();
 							if (listeners.containsKey(path))
@@ -114,37 +137,88 @@ public class EventBusImpl extends EventBus {
 							EventContainerListener l = new EventContainerListener();
 							l.owner = receiver;
 
-							// Get dispatcher
-							if (!Modifier.isStatic(meth.getModifiers())) {
-								// Regular
-								IEventDispatcher disp = getDispatcher(receiver.getClass(), meth, eventType);
-								l.delegate = t -> {
-									// Go through conditions
-									for (EventCondData cond : conditionCtors) {
-										IGenericEventCondition condition = cond.ctor.construct(receiver, meth,
-												(EventObject) t, cond.anno, EventBusImpl.this);
-										if (!condition.match(receiver, meth, (EventObject) t))
-											return;
-									}
+							// Check if supplier
+							if (!SupplierEventObject.class.isAssignableFrom(eventType)) {
+								// Get dispatcher
+								if (!Modifier.isStatic(meth.getModifiers())) {
+									// Regular
+									IEventDispatcher disp = getDispatcher(receiver.getClass(), meth, eventType);
+									l.delegate = t -> {
+										// Go through conditions
+										for (EventCondData cond : conditionCtors) {
+											IGenericEventCondition condition = cond.ctor.construct(receiver, meth,
+													(EventObject) t, cond.anno, EventBusImpl.this);
+											if (!condition.match(receiver, meth, (EventObject) t))
+												return;
+										}
 
-									// Dispatch
-									disp.dispatch(receiver, (EventObject) t);
-								};
+										// Dispatch
+										disp.dispatch(receiver, (EventObject) t);
+									};
+								} else {
+									// Static
+									IStaticEventDispatcher disp = getStaticDispatcher(receiver.getClass(), meth,
+											eventType);
+									l.delegate = t -> {
+										// Go through conditions
+										for (EventCondData cond : conditionCtors) {
+											IGenericEventCondition condition = cond.ctor.construct(null, meth,
+													(EventObject) t, cond.anno, EventBusImpl.this);
+											if (condition.supportsStatic()
+													&& !condition.match(null, meth, (EventObject) t))
+												return;
+										}
+
+										// Dispatch
+										disp.dispatch((EventObject) t);
+									};
+								}
 							} else {
-								// Static
-								IStaticEventDispatcher disp = getStaticDispatcher(receiver.getClass(), meth, eventType);
-								l.delegate = t -> {
-									// Go through conditions
-									for (EventCondData cond : conditionCtors) {
-										IGenericEventCondition condition = cond.ctor.construct(null, meth,
-												(EventObject) t, cond.anno, EventBusImpl.this);
-										if (condition.supportsStatic() && !condition.match(null, meth, (EventObject) t))
-											return;
-									}
+								// Get dispatcher
+								if (!Modifier.isStatic(meth.getModifiers())) {
+									// Regular
+									ISupplierEventDispatcher disp = getSupplierDispatcher(receiver.getClass(), meth,
+											eventType);
+									l.delegate = t -> {
+										// Go through conditions
+										for (EventCondData cond : conditionCtors) {
+											IGenericEventCondition condition = cond.ctor.construct(receiver, meth,
+													(EventObject) t, cond.anno, EventBusImpl.this);
+											if (!condition.match(receiver, meth, (EventObject) t))
+												return;
+										}
 
-									// Dispatch
-									disp.dispatch((EventObject) t);
-								};
+										// Dispatch
+										@SuppressWarnings("rawtypes")
+										SupplierEventObject e = (SupplierEventObject<?>) t;
+										Object ret = disp.dispatch(receiver, e);
+										if (ret != null) {
+											e.setResult(ret);
+										}
+									};
+								} else {
+									// Static
+									IStaticSupplierEventDispatcher disp = getStaticSupplierDispatcher(
+											receiver.getClass(), meth, eventType);
+									l.delegate = t -> {
+										// Go through conditions
+										for (EventCondData cond : conditionCtors) {
+											IGenericEventCondition condition = cond.ctor.construct(null, meth,
+													(EventObject) t, cond.anno, EventBusImpl.this);
+											if (condition.supportsStatic()
+													&& !condition.match(null, meth, (EventObject) t))
+												return;
+										}
+
+										// Dispatch
+										@SuppressWarnings("rawtypes")
+										SupplierEventObject e = (SupplierEventObject<?>) t;
+										Object ret = disp.dispatch(e);
+										if (ret != null) {
+											e.setResult(ret);
+										}
+									};
+								}
 							}
 							eventLog.debug("Attaching event handler " + receiver.getClass().getTypeName() + ":"
 									+ meth.getName() + " to event " + eventType.getTypeName());
@@ -479,6 +553,116 @@ public class EventBusImpl extends EventBus {
 			try {
 				IEventDispatcher inst = dp.getConstructor().newInstance();
 				objDispatchers.put(eventPth, inst);
+				return inst;
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException | NoSuchMethodException | SecurityException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	private IStaticSupplierEventDispatcher getStaticSupplierDispatcher(Class<?> type, Method method,
+			Class<?> eventObject) {
+		String eventPth = type.getTypeName().replace(".", "/") + "/" + eventObject.getTypeName().replace(".", "/") + "_"
+				+ method.getName().replace(".", "/");
+		synchronized (staticSupDispatchers) {
+			if (staticSupDispatchers.containsKey(eventPth))
+				return staticSupDispatchers.get(eventPth);
+
+			// Generate bytecode
+			ClassNode syn = new ClassNode(Opcodes.ASM9);
+			syn.superName = "java/lang/Object";
+			syn.version = Opcodes.V1_6;
+			syn.name = eventPth + "$Synthetic_" + System.currentTimeMillis();
+			syn.interfaces.add("org/asf/nexus/events/impl/asm/IStaticSupplierEventDispatcher");
+			syn.access = Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC;
+
+			// Generate constructor
+			MethodNode init = new MethodNode();
+			init.access = Opcodes.ACC_PUBLIC;
+			init.name = "<init>";
+			init.desc = "()V";
+			init.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+			init.instructions
+					.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
+			init.instructions.add(new InsnNode(Opcodes.RETURN));
+			syn.methods.add(init);
+
+			// Generate dispatcher
+			MethodNode setup = new MethodNode();
+			setup.name = "dispatch";
+			setup.desc = "(Lorg/asf/nexus/events/SupplierEventObject;)Ljava/lang/Object;";
+			setup.access = Opcodes.ACC_PUBLIC;
+
+			setup.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+			setup.instructions.add(new TypeInsnNode(Opcodes.CHECKCAST, eventObject.getTypeName().replace(".", "/")));
+			setup.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, type.getTypeName().replace(".", "/"),
+					method.getName(),
+					"(" + getDescriptors(eventObject) + ")" + getDescriptor(method.getReturnType().getTypeName())));
+			setup.instructions.add(new InsnNode(Opcodes.ARETURN));
+			syn.methods.add(setup);
+
+			// Create instance
+			Class<IStaticSupplierEventDispatcher> dp = binLoader.loadClassBinary(syn,
+					IStaticSupplierEventDispatcher.class);
+			try {
+				IStaticSupplierEventDispatcher inst = dp.getConstructor().newInstance();
+				staticSupDispatchers.put(eventPth, inst);
+				return inst;
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException | NoSuchMethodException | SecurityException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	private ISupplierEventDispatcher getSupplierDispatcher(Class<?> type, Method method, Class<?> eventType) {
+		String eventPth = type.getTypeName().replace(".", "/") + "/" + eventType.getTypeName().replace(".", "/") + "_"
+				+ method.getName().replace(".", "/");
+		synchronized (objSupDispatchers) {
+			if (objSupDispatchers.containsKey(eventPth))
+				return objSupDispatchers.get(eventPth);
+
+			// Generate bytecode
+			ClassNode syn = new ClassNode(Opcodes.ASM9);
+			syn.superName = "java/lang/Object";
+			syn.version = Opcodes.V1_6;
+			syn.name = eventPth + "$Synthetic_" + System.currentTimeMillis();
+			syn.interfaces.add("org/asf/nexus/events/impl/asm/ISupplierEventDispatcher");
+			syn.access = Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC;
+
+			// Generate constructor
+			MethodNode init = new MethodNode();
+			init.access = Opcodes.ACC_PUBLIC;
+			init.name = "<init>";
+			init.desc = "()V";
+			init.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+			init.instructions
+					.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
+			init.instructions.add(new InsnNode(Opcodes.RETURN));
+			syn.methods.add(init);
+
+			// Generate dispatcher
+			MethodNode setup = new MethodNode();
+			setup.name = "dispatch";
+			setup.desc = "(Lorg/asf/nexus/events/IEventReceiver;Lorg/asf/nexus/events/SupplierEventObject;)Ljava/lang/Object;";
+			setup.access = Opcodes.ACC_PUBLIC;
+
+			setup.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+			setup.instructions.add(new TypeInsnNode(Opcodes.CHECKCAST, type.getTypeName().replace(".", "/")));
+			setup.instructions.add(new VarInsnNode(Opcodes.ALOAD, 2));
+			setup.instructions.add(new TypeInsnNode(Opcodes.CHECKCAST, eventType.getTypeName().replace(".", "/")));
+			setup.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, type.getTypeName().replace(".", "/"),
+					method.getName(),
+					"(" + getDescriptors(eventType) + ")" + getDescriptor(method.getReturnType().getTypeName())));
+			setup.instructions.add(new InsnNode(Opcodes.ARETURN));
+			syn.methods.add(setup);
+
+			// Create instance
+			Class<ISupplierEventDispatcher> dp = binLoader.loadClassBinary(syn, ISupplierEventDispatcher.class);
+			try {
+				ISupplierEventDispatcher inst = dp.getConstructor().newInstance();
+				objSupDispatchers.put(eventPth, inst);
 				return inst;
 			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 					| InvocationTargetException | NoSuchMethodException | SecurityException e) {

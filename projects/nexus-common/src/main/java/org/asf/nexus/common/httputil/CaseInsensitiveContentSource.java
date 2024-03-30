@@ -85,7 +85,7 @@ public class CaseInsensitiveContentSource extends ContentSource {
 		} else {
 			HttpRequestProcessor impl = null;
 			for (HttpRequestProcessor proc : processors) {
-				if (proc instanceof HttpPushProcessor)
+				if (proc instanceof HttpPushProcessor && !((HttpPushProcessor) proc).supportsNonPush())
 					continue;
 				if (!proc.supportsChildPaths()) {
 					String url = request.getRequestPath();
@@ -105,7 +105,7 @@ public class CaseInsensitiveContentSource extends ContentSource {
 			}
 			if (!compatible) {
 				for (HttpRequestProcessor proc : processors) {
-					if (proc instanceof HttpPushProcessor)
+					if (proc instanceof HttpPushProcessor && !((HttpPushProcessor) proc).supportsNonPush())
 						continue;
 					if (proc.supportsChildPaths()) {
 						String url = request.getRequestPath();

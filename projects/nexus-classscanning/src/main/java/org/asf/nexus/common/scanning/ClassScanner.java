@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -121,6 +123,23 @@ public class ClassScanner implements Closeable {
 		if (imported)
 			throw new IllegalArgumentException("Scanner already imported the class path");
 		pool.addSource(source);
+		return this;
+	}
+
+	/**
+	 * Adds sources based on class instances, finds the folder/jar containing the
+	 * class and adds it as a file
+	 * 
+	 * @param source Source class
+	 */
+	public ClassScanner addSource(Class<?> source) {
+		URL u = source.getProtectionDomain().getCodeSource().getLocation();
+		try {
+			File sourceF = new File(u.toURI());
+			addSource(sourceF);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
 		return this;
 	}
 
@@ -269,7 +288,8 @@ public class ClassScanner implements Closeable {
 	 * @param castType   Type to cast to
 	 * @return Array of Class instances
 	 */
-	public <T> Class<? extends T>[] findAnnotatedClassInstances(Class<T> annotation, Class<T> castType) {
+	public <T> Class<? extends T>[] findAnnotatedClassInstances(Class<? extends Annotation> annotation,
+			Class<T> castType) {
 		return findAnnotatedClassInstances(annotation.getTypeName(), castType);
 	}
 

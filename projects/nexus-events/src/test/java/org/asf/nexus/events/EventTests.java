@@ -7,8 +7,6 @@ import java.lang.reflect.Method;
 
 import org.asf.nexus.events.conditions.EventCondition;
 import org.asf.nexus.events.conditions.interfaces.IEventCondition;
-import org.asf.nexus.events.impl.asm.IEventDispatcher;
-import org.asf.nexus.events.impl.asm.IStaticEventDispatcher;
 import org.junit.Test;
 
 public class EventTests {
@@ -22,6 +20,12 @@ public class EventTests {
 	public static class TestEventThree extends EventObject {
 	}
 
+	public static class TestEventFour extends SupplierEventObject<String> {
+	}
+
+	public static class TestEventFive extends SupplierEventObject<String> {
+	}
+
 	public static class TestCondition implements IEventCondition<TestEventThree> {
 
 		@Override
@@ -32,33 +36,6 @@ public class EventTests {
 		@Override
 		public boolean matching(IEventReceiver receiverType, Method listener, TestEventThree event) {
 			return true;
-		}
-
-	}
-
-	public static class TestDispatcherOne implements IEventDispatcher {
-
-		@Override
-		public void dispatch(IEventReceiver receiver, EventObject event) {
-			((TestEventReceivers) receiver).test1((TestEventOne) event);
-		}
-
-	}
-
-	public static class TestDispatcherTest2 implements IEventDispatcher {
-
-		@Override
-		public void dispatch(IEventReceiver receiver, EventObject event) {
-			((TestEventReceivers) receiver).test5((TestEventOne) event);
-		}
-
-	}
-
-	public static class TestDispatcherTwo implements IStaticEventDispatcher {
-
-		@Override
-		public void dispatch(EventObject event) {
-			TestEventReceivers.test2((TestEventTwo) event);
 		}
 
 	}
@@ -108,6 +85,16 @@ public class EventTests {
 		public void test6(TestEventThree event) {
 			receivedTestSix = true;
 		}
+
+		@EventListener
+		public String test6(TestEventFour event) {
+			return "abc";
+		}
+
+		@EventListener
+		public static String test7(TestEventFive event) {
+			return "abcdef";
+		}
 	}
 
 	private TestEventReceivers rec = new TestEventReceivers();
@@ -129,6 +116,29 @@ public class EventTests {
 	}
 
 	@Test
+	public void testPublicSuppier() {
+		// Dispatch
+		rec.receivedTestOne = false;
+		EventBus.getInstance().dispatchEvent(new TestEventFour(), (ev, ret) -> {
+			assertTrue(ret.equals("abc"));
+			rec.receivedTestOne = true;
+		});
+		assertTrue(rec.receivedTestOne);
+	}
+
+	@Test
+	public void testPublicSuppierAsync() {
+		// Dispatch
+		assertTrue(EventBus.getInstance().dispatchEventAsync(new TestEventFour()).getResult().equals("abc"));
+	}
+
+	@Test
+	public void testStaticPublicSuppier() {
+		// Dispatch
+		assertTrue(EventBus.getInstance().dispatchEvent(new TestEventFive()).equals("abcdef"));
+	}
+
+	@Test
 	public void testPrivate() {
 		// Dispatch
 		rec.receivedTestFour = false;
@@ -145,7 +155,7 @@ public class EventTests {
 	}
 
 	@Test
-	public void testConditions() {
+	public void testZConditions() {
 		// Dispatch
 		rec.receivedTestFive = false;
 		rec.receivedTestSix = false;

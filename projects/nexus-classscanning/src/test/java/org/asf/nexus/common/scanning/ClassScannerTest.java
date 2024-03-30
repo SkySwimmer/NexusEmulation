@@ -17,8 +17,14 @@ public class ClassScannerTest {
 	@Test
 	public void testDiscovery() {
 		ClassScanner scanner = new ClassScanner();
-		scanner.addDefaultCp();
+		scanner.addSource(getClass());
 		String[] classes = scanner.getAllClassNames();
+		assertTrue(Stream.of(classes).anyMatch(t -> t.equals(getClass().getTypeName())));
+		assertTrue(scanner.isClassKnown(getClass().getTypeName()));
+		scanner.close();
+		scanner = new ClassScanner();
+		scanner.addDefaultCp();
+		classes = scanner.getAllClassNames();
 		assertTrue(Stream.of(classes).anyMatch(t -> t.equals(getClass().getTypeName())));
 		assertTrue(scanner.isClassKnown(getClass().getTypeName()));
 		scanner.close();
